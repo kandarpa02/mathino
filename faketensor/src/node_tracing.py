@@ -1,11 +1,4 @@
-class Tape:
-    def __init__(self):
-        self.nodes = []
+from typing import List
+from .autograd.tape_recorder import Node
 
-    def add(self, node):
-        self.nodes.append(node)
-
-    def clear(self):
-        self.nodes.clear()
-
-tape = Tape()
+TAPE: List[Node] = []
