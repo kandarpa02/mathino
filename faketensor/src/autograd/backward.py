@@ -30,6 +30,8 @@ def _backward(fun: Callable, args, argnums: Union[int, tuple, None]):
     Perform forward + backward and return (value, grad_dict).
     grad_dict maps id(x) → numpy gradient.
     """
+    if not all(isinstance(a, NDarray) for a in args):
+        raise TypeError("Only NDarray arguments supported")
 
     # -----------------------------
     # 1) Forward pass (build tape)
@@ -40,20 +42,20 @@ def _backward(fun: Callable, args, argnums: Union[int, tuple, None]):
     tape_records = TAPE_STACK[-1] if TAPE_STACK else []
 
     # Init gradient for output
-    grads = { _id(output) : np.ones_like(_extract_np(output)) }
+    grads = { _id(_extract_np(output)) : np.ones_like(_extract_np(output)) }
 
     # -----------------------------
     # 2) Backward pass
     # -----------------------------
     for node in reversed(tape_records):
-        g_out = grads.get(_id(node.out))
+        g_out = grads.get(_id(_extract_np(node.out)))
         if g_out is None:
             continue
 
         parent_grads = node.grad_fn(g_out)
 
         for parent, parent_grad in zip(node.parents, parent_grads):
-            pid = _id(parent)
+            pid = _id(_extract_np(parent))
 
             # normalize to numpy
             pg = _extract_np(parent_grad)
@@ -131,6 +133,6 @@ def value_and_grad(fun: Callable, argnum: Union[int, tuple, None]=None) -> Calla
             grad_vals = tuple(gdict.get(t, _zero_like(args[i])) 
                               for t, i in zip(target_ids, argnum))
 
-        return out, grad_vals
+        return out, grad_vals[0] if len(grad_vals)==1 else grad_vals
 
     return wrapped

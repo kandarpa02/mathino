@@ -1,1 +1,1 @@
-from .math import add, mul
+from .math import add, multiply, subtract, negative, divide

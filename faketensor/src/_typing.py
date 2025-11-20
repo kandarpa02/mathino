@@ -8,7 +8,7 @@ class arraytype(Protocol):
     """A protocol representing any array-like object that supports basic arithmetic operations.
     """
 
-    data:Any
+    np:Any
 
     @property
     def shape(self:T) -> Any: ...

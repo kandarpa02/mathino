@@ -34,7 +34,7 @@ def no_record():
 
 @dataclass
 class Node:
-    out: np.ndarray
+    out: arraytype
     parents: tuple
     grad_fn: Callable
 
