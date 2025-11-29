@@ -58,10 +58,14 @@ class NDarray(Array):
         super().__init__()
         arr = as_ndarray(data)
         self.np = arr.astype(dtype) if dtype else arr
-
+        self.train = False
     # -------------------------
     # Basic attributes
     # -------------------------
+    @property
+    def trainable(self):
+        return self.train
+    
     @property
     def dtype(self):
         return self.np.dtype.__str__()
