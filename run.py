@@ -16,26 +16,43 @@ class Linear(ft.Cell):
 class Model(ft.Cell):
     def __init__(self):
         super().__init__()
-        self.f1 = Linear(5, 3)
-        self.f2 = Linear(3, 1)
+        self.f1 = Linear(3, 1)
 
     def call(self, x):
-        return self.f2(self.f1(x))
+        return self.f1(x)
     
 
 model = Model()
+optimizer = ft.GradientDescent(model, lr=0.2)
+
 
 np.random.seed(0)
-a = nd.array(np.random.rand(4, 5))
-params = list(model.parameters())
-print(params[0])
+a = nd.array(np.random.rand(20, 3))
+b = nd.array(np.random.rand(20))
 
-# print(ft.value_and_grad(lambda model: model(a))(model))
+def loss_f(model, x, y):
+    pred = model(x)
+    loss = ft.mean((pred - y) ** 2)
+    return loss
 
-a = {'d':nd.array(4.), 'g':nd.array(2.)}
-b = ft.Variable(4.)
+# def steps(epochs):
+#     for e in range(epochs+1):
+out, grads = ft.value_and_grad(lambda model:loss_f(model, a, b))(model)
+optimizer.update(grads)
 
-def fun(dic, x, y): 
-    return (dic.get('d')*x) ** dic.get('g') / y
+state = optimizer.get_state()
 
-# print(ft.grad(lambda d, y:fun(d, 4., y))(a, b))
+optimizer.load_state(state)
+
+# print(optimizer)
+
+@ft.jit
+def f(x, y):
+    print("Tracing")
+    return (x * x) / y
+
+a = nd.array(3.)
+b = nd.array(4.)
+
+print(f(a, b))
+print(f(a, b))

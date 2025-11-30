@@ -11,7 +11,6 @@ Implements sum, mean, max, min, prod with:
 from __future__ import annotations
 from .._typing import Array as A
 from ..base import function
-from ..utils import broadcast_backward
 from ...backend.backend import xp
 
 Array = A
@@ -22,30 +21,30 @@ Array = A
 # ============================================================
 
 def sum(x: Array, axis=None, keepdims=False):
-    """
-    Sum over the specified axes.
-
-    Gradient:
-        Re-expand g to x.shape via broadcast.
-    """
     lib = xp()
 
     def _fun(x):
         from ..array import as_nd
-        x_nd = x
-        out = as_nd(lib.sum(x_nd, axis=axis, keepdims=keepdims))
+
+        x_w = as_nd(x)
+        x_raw = x_w.np
+
+        out_raw = lib.sum(x_raw, axis=axis, keepdims=keepdims)
+        out = as_nd(out_raw)
 
         def grad_fn(g):
-            # Expand g back to original shape
-            g_nd = as_nd(g)
+            g_raw = as_nd(g).np
+
+            # Expand reduced dims
             if not keepdims and axis is not None:
-                # We must expand dims at reduced axes
                 axes = axis if isinstance(axis, tuple) else (axis,)
                 for ax in sorted(axes):
-                    g_nd = lib.expand_dims(g_nd, ax)
-            return as_nd(lib.broadcast_to(g_nd, x_nd.shape)),
+                    g_raw = lib.expand_dims(g_raw, ax)
 
-        return out, (x_nd,), grad_fn
+            g_raw = lib.broadcast_to(g_raw, x_raw.shape)
+            return as_nd(g_raw),
+
+        return out, (x_w,), grad_fn
 
     return function(_fun)(x)
 
@@ -55,39 +54,38 @@ def sum(x: Array, axis=None, keepdims=False):
 # ============================================================
 
 def mean(x: Array, axis=None, keepdims=False):
-    """
-    Mean over the specified axes.
-
-    Gradient:
-        same as sum(x)/N  →  g / N, expanded to x.shape
-    """
     lib = xp()
 
     def _fun(x):
         from ..array import as_nd
-        x_nd = as_nd(x)
 
-        # compute forward
-        out = as_nd(lib.mean(x_nd, axis=axis, keepdims=keepdims))
+        x_w = as_nd(x)
+        x_raw = x_w.np
 
-        # number of elements reduced
+        out_raw = lib.mean(x_raw, axis=axis, keepdims=keepdims)
+        out = as_nd(out_raw)
+
+        # compute N
         if axis is None:
-            N = x_nd.size
+            N = x_raw.size
         else:
             axes = axis if isinstance(axis, tuple) else (axis,)
-            dims = lib.array(x_nd.shape)[list(axes)]
-            N = int(lib.prod(dims))
+            dims = [x_raw.shape[a] for a in axes]
+            N = int(lib.prod(lib.array(dims)))
 
         def grad_fn(g):
-            g_nd = as_nd(g)
+            g_raw = as_nd(g).np
+
             if not keepdims and axis is not None:
                 axes = axis if isinstance(axis, tuple) else (axis,)
                 for ax in sorted(axes):
-                    g_nd = lib.expand_dims(g_nd, ax)
-            g_nd = g_nd / N
-            return as_nd(lib.broadcast_to(g_nd, x_nd.shape)),
+                    g_raw = lib.expand_dims(g_raw, ax)
 
-        return out, (x_nd,), grad_fn
+            g_raw = g_raw / N
+            g_raw = lib.broadcast_to(g_raw, x_raw.shape)
+            return as_nd(g_raw),
+
+        return out, (x_w,), grad_fn
 
     return function(_fun)(x)
 
@@ -97,39 +95,36 @@ def mean(x: Array, axis=None, keepdims=False):
 # ============================================================
 
 def max(x: Array, axis=None, keepdims=False):
-    """
-    Maximum along axes.
-
-    Gradient:
-        Mask of elements equal to the max.
-        (Subgradient: if multiple maxima, gradient is split equally.)
-    """
     lib = xp()
 
     def _fun(x):
         from ..array import as_nd
-        x_nd = as_nd(x)
-        out = as_nd(lib.max(x_nd, axis=axis, keepdims=keepdims))
+
+        x_w = as_nd(x)
+        x_raw = x_w.np
+
+        out_raw = lib.max(x_raw, axis=axis, keepdims=keepdims)
+        out = as_nd(out_raw)
 
         def grad_fn(g):
-            g_nd = as_nd(g)
-            # Expand out back to x's shape
-            out_b = out
+            g_raw = as_nd(g).np
+
+            # Expand out_raw to x_raw shape
+            out_b = out_raw
             if not keepdims and axis is not None:
                 axes = axis if isinstance(axis, tuple) else (axis,)
                 for ax in sorted(axes):
                     out_b = lib.expand_dims(out_b, ax)
-            out_b = lib.broadcast_to(out_b, x_nd.shape)
+            out_b = lib.broadcast_to(out_b, x_raw.shape)
 
-            mask = (x_nd == out_b)
-            # Normalize when multiple max locations exist
+            mask = (x_raw == out_b)
             denom = lib.sum(mask, axis=axis, keepdims=True)
-            denom = lib.broadcast_to(denom, x_nd.shape)
-            grad = mask * (g_nd / denom)
+            denom = lib.broadcast_to(denom, x_raw.shape)
 
-            return as_nd(grad),
+            grad_raw = mask * (g_raw / denom)
+            return as_nd(grad_raw),
 
-        return out, (x_nd,), grad_fn
+        return out, (x_w,), grad_fn
 
     return function(_fun)(x)
 
@@ -139,35 +134,35 @@ def max(x: Array, axis=None, keepdims=False):
 # ============================================================
 
 def min(x: Array, axis=None, keepdims=False):
-    """
-    Minimum along axes.
-
-    Same gradient logic as max, but mask on minima.
-    """
     lib = xp()
 
     def _fun(x):
         from ..array import as_nd
-        x_nd = as_nd(x)
-        out = as_nd(lib.min(x_nd, axis=axis, keepdims=keepdims))
+
+        x_w = as_nd(x)
+        x_raw = x_w.np
+
+        out_raw = lib.min(x_raw, axis=axis, keepdims=keepdims)
+        out = as_nd(out_raw)
 
         def grad_fn(g):
-            g_nd = as_nd(g)
-            out_b = out
+            g_raw = as_nd(g).np
+
+            out_b = out_raw
             if not keepdims and axis is not None:
                 axes = axis if isinstance(axis, tuple) else (axis,)
                 for ax in sorted(axes):
                     out_b = lib.expand_dims(out_b, ax)
-            out_b = lib.broadcast_to(out_b, x_nd.shape)
+            out_b = lib.broadcast_to(out_b, x_raw.shape)
 
-            mask = (x_nd == out_b)
+            mask = (x_raw == out_b)
             denom = lib.sum(mask, axis=axis, keepdims=True)
-            denom = lib.broadcast_to(denom, x_nd.shape)
-            grad = mask * (g_nd / denom)
+            denom = lib.broadcast_to(denom, x_raw.shape)
 
-            return as_nd(grad),
+            grad_raw = mask * (g_raw / denom)
+            return as_nd(grad_raw),
 
-        return out, (x_nd,), grad_fn
+        return out, (x_w,), grad_fn
 
     return function(_fun)(x)
 
@@ -177,41 +172,34 @@ def min(x: Array, axis=None, keepdims=False):
 # ============================================================
 
 def prod(x: Array, axis=None, keepdims=False):
-    """
-    Product along axes.
-
-    Gradient:
-        d/dx_i prod(x) = prod(x) / x_i  (with zero-safe masking)
-    """
     lib = xp()
 
     def _fun(x):
         from ..array import as_nd
-        x_nd = as_nd(x)
-        out = as_nd(lib.prod(x_nd, axis=axis, keepdims=keepdims))
+
+        x_w = as_nd(x)
+        x_raw = x_w.np
+
+        out_raw = lib.prod(x_raw, axis=axis, keepdims=keepdims)
+        out = as_nd(out_raw)
 
         def grad_fn(g):
-            g_nd = as_nd(g)
+            g_raw = as_nd(g).np
 
-            # Expand out into x_nd.shape
-            out_b = out
+            out_b = out_raw
             if not keepdims and axis is not None:
                 axes = axis if isinstance(axis, tuple) else (axis,)
                 for ax in sorted(axes):
                     out_b = lib.expand_dims(out_b, ax)
-            out_b = lib.broadcast_to(out_b, x_nd.shape)
+            out_b = lib.broadcast_to(out_b, x_raw.shape)
 
-            # Safe gradient: out / x, but handle x=0 carefully
-            eps_mask = (x_nd != 0)
-            grad = lib.where(
-                eps_mask,
-                out_b / x_nd,
-                0.0,  # zero-safe
-            )
-            grad = grad * g_nd
+            # Safe: out / x
+            eps_mask = (x_raw != 0)
+            grad_raw = lib.where(eps_mask, out_b / x_raw, 0.0)
+            grad_raw = grad_raw * g_raw
 
-            return as_nd(grad),
+            return as_nd(grad_raw),
 
-        return out, (x_nd,), grad_fn
+        return out, (x_w,), grad_fn
 
     return function(_fun)(x)

@@ -22,6 +22,7 @@ from ..base import function
 from ..utils import broadcast_backward
 from ...backend.backend import xp
 from .primitive_array_ops import squeeze
+from .primitive_reduct import max
 
 # Allow scalars as valid inputs
 Array = A | int | float
@@ -214,14 +215,16 @@ def log(x: Array):
 
     def _fun(x):
         from ..array import as_nd
-        from . import divide, multiply
 
-        out = as_nd(lib.log(x))
+        eps = 1e-12
+        inp = lib.maximum(x, eps)
+        out = as_nd(lib.log(inp))  # clamp
 
         def grad_fn(g):
-            return multiply(g, divide(as_nd(1.0), x)),
+            return (g / (x + eps),)
 
         return out, (as_nd(x),), grad_fn
+
 
     return function(_fun)(x)
 

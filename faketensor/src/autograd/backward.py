@@ -19,13 +19,35 @@ def is_leaf(x):
 
 def expand_cell(x):
     """
-    Expand Cell into its parameters.
-    If x is Cell -> replace it in pytree with x.parameters()
-    Otherwise return None.
+    Expand a `Cell` into its underlying trainable parameters.
+
+    Purpose
+    -------
+    FakeTensor supports pytree-style transformation (like JAX).
+    When applying `grad()` or `value_and_grad()`, the system must know
+    which components of `args` correspond to differentiable objects.
+
+    A `Cell` is a container (like `torch.nn.Module`) that stores Variables.
+    It is *not* differentiable itself, but its parameters are.
+
+    Behavior
+    --------
+    • If `x` is a `Cell`, return `list(x.parameters())`.
+    • Otherwise, return `None`, meaning “use x as-is”.
+
+    This allows pytree flattening to treat:
+        grad(f, cell)  →  parameters of the cell
+    rather than treating Cell as undifferentiable.
+
+    Returns
+    -------
+    list or None
+        List of parameters if `x` is a Cell, or None otherwise.
     """
     if isinstance(x, Cell):
         return list(x.parameters())
     return None
+
 
 
 def _extract_np(x):
@@ -44,7 +66,60 @@ def _zero_like(x):
 # BACKWARD CORE (internal)
 # ================================================================
 def _backward(fun, original_args, diff_leaves):
+    """
+    Execute a function under tracing, build a tape of operations, and
+    perform a full reverse-mode automatic differentiation pass.
 
+    This is the heart of FakeTensor's eager-mode autograd system.
+
+    Parameters
+    ----------
+    fun : Callable
+        The user function whose output `out = fun(*args)` we differentiate.
+        This function must use FakeTensor primitives (recorded on the tape).
+
+    original_args : tuple
+        The original unexpanded arguments passed by the user.
+        These may include Cells, NDarrays, Variables, or arbitrary objects.
+
+    diff_leaves : list
+        A list of leaf nodes (NDarray/Variable) that require gradients.
+        These correspond to leaves extracted after pytree flattening.
+
+    Algorithm
+    ---------
+    1. Run `fun(*args)` inside a `tape()` context, collecting a linear tape.
+
+    2. Initialize gradient dictionary:
+          grads[id(out)] = ones_like(out)
+
+       This is reverse-mode initialization (∂out/∂out = 1).
+
+    3. Traverse all recorded Nodes in reverse order:
+          for node in reversed(tape):
+              g = grads[id(node.out)]
+              parent_grads = node.grad_fn(g)
+              accumulate into grads for each parent
+
+    4. Return:
+        (out, grads)
+
+       where `grads` maps:
+           id(leaf) → gradient array
+
+    Notes
+    -----
+    • This function does NOT reshape gradients into pytrees.
+      That is done by `grad()` and `value_and_grad()`.
+
+    • This function does NOT filter which leaves to differentiate.
+      That is handled before calling `_backward`.
+
+    Returns
+    -------
+    tuple
+        (output_of_fun, gradient_dict)
+    """
     with tape():
         out = fun(*original_args)
 
@@ -70,11 +145,48 @@ def _backward(fun, original_args, diff_leaves):
 # PUBLIC API: grad()
 # ================================================================
 def grad(fun):
-    def wrapped(*args):
+    """
+    Transform a function into one that returns gradients w.r.t. its arguments.
 
-        # -------------------------------------------------------
-        # Expand Cells into their parameters before flattening
-        # -------------------------------------------------------
+    This is the FakeTensor analog of:
+        • JAX:  jax.grad
+        • PyTorch: torch.autograd.grad but functional
+        • TensorFlow: tf.GradientTape.gradient (wrapped functionally)
+
+    Behavior
+    --------
+    wrapped = grad(fun)
+
+    Calling:
+        wrapped(x)
+    returns the gradient of `fun(x)` with respect to x.
+
+    If multiple arguments are passed:
+        wrapped(x, y, z)
+    returns a pytree of gradients matching the argument structure.
+
+    Cell expansion
+    --------------
+    If an argument is a `Cell`, it is automatically replaced with its
+    trainable parameters (Variables).  
+    This mimics JAX pytree flattening, and allows:
+
+        grad(loss_fn)(my_model)
+
+    to return gradients for all parameters of `my_model`.
+
+    Pytree semantics
+    ----------------
+    • Arguments are flattened using `flatten_pytree`.
+    • Only leaves which satisfy `is_leaf()` receive gradients.
+    • Non-leaf values produce `None`.
+
+    Returns
+    -------
+    Callable
+        A function returning gradients matching the structure of input args.
+    """
+    def wrapped(*args):
         expanded_args = []
         for a in args:
             repl = expand_cell(a)
@@ -104,18 +216,45 @@ def grad(fun):
 # PUBLIC API: value_and_grad()
 # ================================================================
 def value_and_grad(fun: Callable, argnum: Union[int, tuple, list, None] = None) -> Callable:
+    """
+    Create a function that returns both the value and gradient of fun(*args).
 
+    This matches:
+        • JAX:  jax.value_and_grad
+        • TF:   tape.gradient + returning value
+        • PyTorch: return loss, grads
+
+    Signature
+    ---------
+        wrapped = value_and_grad(fun)
+
+        y, dy = wrapped(x)
+
+    Behavior
+    --------
+    • Expands Cell arguments into parameters.
+    • Flattens the argument structure (pytree).
+    • Runs `_backward` to compute value + gradients.
+    • Reconstructs gradient pytrees matching the input args.
+
+    argnum (currently unused)
+    -------------------------
+    Present for API compatibility with JAX.  
+    FakeTensor currently differentiates w.r.t *all* leaves.
+    Support for selective argnums can be added easily.
+
+    Returns
+    -------
+    Callable
+        Function returning:
+            (fun(*args), gradients)
+    """
     def wrapped(*args):
-
-        # -------------------------------------------------------
-        # Expand Cells into list of parameters
-        # -------------------------------------------------------
         expanded_args = []
         for a in args:
             repl = expand_cell(a)
             expanded_args.append(repl if repl is not None else a)
 
-        # Normal flatten
         leaves, treedef = flatten_pytree(expanded_args)
         diff_leaves = [x for x in leaves if is_leaf(x)]
 

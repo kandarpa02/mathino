@@ -33,6 +33,10 @@ class Cell:
             if isinstance(v, Cell):
                 yield from v.parameters()
 
+    def parameters_upload(self, new_params):
+        for old, new in zip(self.parameters(), new_params):
+            old.np[...] = new.np
+
     def __call__(self, *args, **kwargs):
         return self.call(*args, **kwargs)
 

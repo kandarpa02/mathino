@@ -78,6 +78,10 @@ class NDarray(Array):
     @property
     def ndim(self):
         return self.np.ndim
+    
+    @property
+    def size(self):
+        return self.np.size
 
     def __len__(self):
         return len(self.np)
@@ -112,6 +116,9 @@ class NDarray(Array):
 
     def __int__(self):
         return int(self.np)
+    
+    # def __index__(self):
+    #     return int(self.np)
     
     # -------------------------
     # Array makers
