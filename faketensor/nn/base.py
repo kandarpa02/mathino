@@ -55,6 +55,17 @@ class Cell:
         super().__setattr__("_cell_name", name if name is not None else self.__class__.__name__)
         super().__setattr__("local_params", Parameter())
 
+    def __repr__(self):
+        body = f"{self.__class__.__name__}("
+        for k, mod in self.__dict__.items():
+            if isinstance(mod, Cell):
+                body += f"\n   ({k}): {repr(mod)}"
+            
+            else:
+                mod.__repr__()
+        return body + "\n)"
+
+
     def _full_child_prefix(self, child_name):
         if self._cell_name is None: #type:ignore
             return child_name
