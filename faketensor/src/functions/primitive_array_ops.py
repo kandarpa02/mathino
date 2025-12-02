@@ -42,11 +42,12 @@ def reshape(x: Array, shape):
 
     def _fun(x):
         from ..array import as_nd
+        from . import reshape
         x_nd = as_nd(x)
         out = as_nd(lib.reshape(x_nd, shape))
 
         def grad_fn(g):
-            return as_nd(lib.reshape(g, x_nd.shape)),
+            return reshape(g, x_nd.shape),
 
         return out, (x_nd,), grad_fn
 
@@ -75,11 +76,12 @@ def expand_dims(x: Array, axis):
 
     def _fun(x):
         from ..array import as_nd
+        from . import squeeze
         x_nd = as_nd(x)
         out = as_nd(lib.expand_dims(x_nd, axis))
 
         def grad_fn(g):
-            return as_nd(lib.squeeze(g, axis=axis)),
+            return squeeze(g, axis=axis),
 
         return out, (x_nd,), grad_fn
 
@@ -108,12 +110,13 @@ def squeeze(x: Array, axis=None):
 
     def _fun(x):
         from ..array import as_nd
+        from . import expand_dims
         x_nd = as_nd(x)
         out = as_nd(lib.squeeze(x_nd, axis=axis))
 
         def grad_fn(g):
             # Note: expand_dims requires exact axis integer or tuple.
-            return as_nd(lib.expand_dims(g, axis=axis)),
+            return expand_dims(g, axis=axis),
 
         return out, (x_nd,), grad_fn
 
@@ -144,12 +147,13 @@ def clip(x: Array, min_val, max_val):
 
     def _fun(x):
         from ..array import as_nd
+        from .primitive_arithmetic import multiply as mul
         x_nd = as_nd(x)
         out = as_nd(lib.clip(x_nd, min_val, max_val))
 
         def grad_fn(g):
             mask = (x_nd >= min_val) & (x_nd <= max_val)
-            return as_nd(g * mask),
+            return mul(g, mask),
 
         return out, (x_nd,), grad_fn
 

@@ -1,8 +1,4 @@
 
-
-# 2. AFTER patching → now import jit API
-from .src.jit.api import jit
-
 # 3. Rest of imports (order no longer matters)
 from .src.autograd.backward import grad, value_and_grad
 from .src import autograd

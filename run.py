@@ -47,7 +47,7 @@ class Model(ft.nn.Cell):
 model = Model()
 optimizer = ft.optimizers.SGD(model, lr=0.2)
 
-print(model)
+# print(model)
 
 np.random.seed(0)
 a = nd.array(np.random.rand(20, 3))
@@ -58,24 +58,10 @@ def loss_f(model, x, y):
     loss = ft.mean((pred - y) ** 2)
     return loss
 
-# print("Params\n", list(model.parameters()))
+x = ft.Variable(4.)
 
-# Model(
-#   (encoder): Enc(
-#     (f1): Linear(in_features=3, out_features=5, bias=True)
-#     (f2): Linear(in_features=5, out_features=2, bias=True)
-#   )
-#   (decoder): Dec(
-#     (f1): Linear(in_features=2, out_features=1, bias=True)
-#   )
-# )
+g = ft.grad(lambda x: x*x)
 
-# Model(
-#  (encoder): Enc(
-#  (f1): Linear(3, 5)
-#  (f2): Linear(5, 2)
-# )
-#  (decoder): Dec(
-#  (f1): Linear(2, 1)
-# )
-# )
+print(g(x))
+print(ft.grad(g)(x))
+

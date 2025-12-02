@@ -56,7 +56,7 @@ class NDarray(Array):
         super().__init__()
         arr = as_ndarray(data)
         self.np = arr.astype(dtype) if dtype else arr
-        self.train = False
+        self.train = True
     __is_leaf__ = True
     __module__ = "faketensor"
     __qualname__ = "NDarray"

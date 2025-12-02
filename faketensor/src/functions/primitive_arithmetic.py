@@ -284,6 +284,7 @@ def transpose(x: Array, axes=None):
 
     def _fun(x):
         from ..array import as_nd
+        from . import transpose
 
         out = as_nd(lib.transpose(x, axes=axes))
 
@@ -292,7 +293,7 @@ def transpose(x: Array, axes=None):
                 rev_axes = None
             else:
                 rev_axes = tuple(lib.argsort(lib.array(axes)))
-            return as_nd(lib.transpose(g, axes=rev_axes)),
+            return as_nd(transpose(g, axes=rev_axes)),
 
         return out, (as_nd(x),), grad_fn
 
@@ -325,6 +326,8 @@ def matmul(a: Array, b: Array):
 
     def _fun(a, b):
         from ..array import as_nd
+        from . import matmul
+        from .primitive_array_ops import expand_dims
 
         out = as_nd(lib.matmul(a, b))
 
@@ -335,8 +338,8 @@ def matmul(a: Array, b: Array):
             # dA
             # ----------------------------
             if A.ndim == 1:              # vector @ matrix
-                A2 = lib.expand_dims(A, 0)  # (1, K)
-                G2 = G if G.ndim > 1 else lib.expand_dims(G, 0)
+                A2 = expand_dims(A, 0)  # (1, K)
+                G2 = G if G.ndim > 1 else expand_dims(G, 0)
                 dA = squeeze(matmul(G2, lib.swapaxes(B, -1, -2)), 0)
             else:
                 dA = G @ lib.swapaxes(B, -1, -2)
@@ -345,8 +348,8 @@ def matmul(a: Array, b: Array):
             # dB
             # ----------------------------
             if B.ndim == 1:              # matrix @ vector
-                B2 = lib.expand_dims(B, -1)  # (K, 1)
-                G2 = G if G.ndim > 1 else lib.expand_dims(G, -1)
+                B2 = expand_dims(B, -1)  # (K, 1)
+                G2 = G if G.ndim > 1 else expand_dims(G, -1)
                 dB = squeeze(matmul(lib.swapaxes(A, -1, -2), G2), -1)
             else:
                 dB = matmul(lib.swapaxes(A, -1, -2), G)
