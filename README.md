@@ -1,20 +1,20 @@
-# FakeTensor
+# Mathino
 
 *An Eager mode Dynamic Autodiff Library in active development*
 
-FakeTensor provides JAX-like automatic differentiation with PyTree support but **Dynamic first**, built with a backend-agnostic architecture that automatically leverages available hardware.
+mathino provides JAX-like automatic differentiation with PyTree support but **Dynamic first**, built with a backend-agnostic architecture that automatically leverages available hardware.
 
 ## Quick Start
 
 ```python
-import faketensor.ndarray as nd
-import faketensor as ft
+import mathino.ndarray as nd
+import mathino as mt
 
 # Basic autodiff - automatically uses GPU if available
 def d2x(x):
     f = lambda x: x**2
-    d = ft.grad(f)
-    d2 = ft.grad(d) 
+    d = mt.grad(f)
+    d2 = mt.grad(d) 
     return d(x), d2(x)
 
 x = nd.array(2.)  # Automatically placed on best available device
@@ -28,7 +28,7 @@ def fun(x: dict):
 
 # Structures are automatically moved to optimal device
 x = {'a': nd.array(3.), 'b': nd.array(2.)}
-print(ft.grad(fun)(x))
+print(mt.grad(fun)(x))
 # {'a': array(6.), 'b': array(9.8875106)}
 ```
 
@@ -36,7 +36,7 @@ print(ft.grad(fun)(x))
 
 **Experimental Research Project**
 
-FakeTensor is currently in **active research and development** as part of an academic exploration into minimal autodiff systems. This is not production-ready software, but rather a live prototype where we're actively experimenting with:
+mathino is currently in **active research and development** as part of an academic exploration into minimal autodiff systems. This is not production-ready somtware, but rather a live prototype where we're actively experimenting with:
 
 - Novel approaches to automatic differentiation
 - Hardware-agnostic tensor abstractions
@@ -70,4 +70,4 @@ This project represents the frontier of what's possible with minimal autodiff ab
 
 ---
 
-*FakeTensor: An experiment in minimal, hardware-agnostic autodiff. Breaking things thoughtfully since 2025.*
+*mathino: An experiment in minimal, hardware-agnostic autodiff. Breaking things thoughtfully since 2025.*

@@ -7,7 +7,7 @@ class Variable(NDarray):
         self.train = True
         self.name = name if name is not None else 'Variable'
 
-    __module__ = "faketensor.nn"
+    __module__ = "mathino.nn"
     __qualname__ = "Variable"
 
     @property
@@ -39,7 +39,7 @@ class Variable(NDarray):
 T = TypeVar("T", bound=Variable)
 
 class Parameter(list[T], Generic[T]):
-    __module__ = "faketensor"
+    __module__ = "mathino.nn"
     __qualname__ = "Parameter"
 
     def __init_subclass__(cls) -> None:

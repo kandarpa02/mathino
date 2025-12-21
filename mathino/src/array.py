@@ -1,11 +1,15 @@
-from ._typing import Array
+from ._typing import Array as A
 from ..backend.backend import xp    # unified backend (numpy OR cupy)
 from .functions import *
+from .functions.comparison import equal, not_equal, greater, greater_equal, less, less_equal
 from typing import Optional
-
+from typing import Union
+from .DType import DType
 # -------------------------
 # Backend-aware array casting
 # -------------------------
+
+_Dtype = Union[DType, str, None]
 
 def as_ndarray(x):
     """
@@ -51,14 +55,14 @@ def as_nd(x):
 # NDarray class
 # -------------------------
 
-class NDarray(Array):
+class NDarray(A):
     def __init__(self, data, dtype=None) -> None:
         super().__init__()
         arr = as_ndarray(data)
         self.np = arr.astype(dtype) if dtype else arr
         self.train = True
     __is_leaf__ = True
-    __module__ = "faketensor"
+    __module__ = "mathino"
     __qualname__ = "NDarray"
     
     # -------------------------
@@ -87,15 +91,13 @@ class NDarray(Array):
     def __len__(self):
         return len(self.np)
 
-    def astype(self, dtype):
+    def astype(self, dtype:Dtype):
+        from ..src.ndarray.utils import astype
         """Return a new NDarray with the same values, different dtype."""
-        return NDarray(self.np, dtype=dtype)
+        return astype(self, dtype)
     
     def __hash__(self):
         return id(self)   # identity-based hashing
-
-    def __eq__(self, other):
-        return self is other
 
     # -------------------------
     # Display helpers
@@ -110,7 +112,7 @@ class NDarray(Array):
         """Allows NumPy to extract underlying data when needed."""
         return self.np
 
-    __array_priority__ = 200  # ensure our ops dominate numpy’s
+    __array_priority__ = 200 
 
     def __float__(self):
         return float(self.np)
@@ -179,3 +181,40 @@ class NDarray(Array):
 
     def __rpow__(self, other):
         return power(as_nd(other), self)
+
+    def __eq__(self, other):
+        return equal(self, as_nd(other))
+
+    def __ne__(self, other):
+        return not_equal(self, as_nd(other))
+
+    def __lt__(self, other):
+        return less(self, as_nd(other))
+
+    def __le__(self, other):
+        return less_equal(self, as_nd(other))
+
+    def __gt__(self, other):
+        return greater(self, as_nd(other))
+
+    def __ge__(self, other):
+        return greater_equal(self, as_nd(other))
+    
+    def __req__(self, other):
+        return equal(as_nd(other), self)
+
+    def __rne__(self, other):
+        return not_equal(as_nd(other), self)
+
+    def __rlt__(self, other):
+        return less(as_nd(other), self)
+
+    def __rle__(self, other):
+        return less_equal(as_nd(other), self)
+
+    def __rgt__(self, other):
+        return greater(as_nd(other), self)
+
+    def __rge__(self, other):
+        return greater_equal(as_nd(other), self)
+
