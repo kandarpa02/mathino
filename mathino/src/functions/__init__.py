@@ -3,3 +3,4 @@ from .primitive_reduct import *
 from .primitive_array_ops import *
 from .convolution import convolution
 from .comparison import *
+from .mean_based_ops import var, std

@@ -249,7 +249,7 @@ def exp(x:Array):
 # =====================================================================
 
 def sqrt(x:Array):
-    return x**(-2)
+    return x**(0.5)
 
 # =====================================================================
 # RECIPROCAL
@@ -294,6 +294,9 @@ def power(x: Array, y: Array):
     def _fun(x, y):
         from ..array import as_nd
         from . import add, subtract, multiply, log, power
+
+        # if y<0:
+        #     x.astype('float32')
 
         out = as_nd(lib.power(x, y))
 

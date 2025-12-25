@@ -123,7 +123,8 @@ def _backward(fun, original_args, diff_leaves):
         (output_of_fun, gradient_dict)
     """
     with tape():
-        out = fun(*original_args)
+        _out = fun(*original_args)
+        out = _out[0] if isinstance(_out, tuple|list) else _out
 
     tape_records = TAPE_STACK[-1] if TAPE_STACK else []
 
@@ -150,7 +151,7 @@ def _backward(fun, original_args, diff_leaves):
             pid = _id(p)
             grads[pid] = grads.get(pid, 0) + pg
 
-    return out, grads
+    return _out, grads
 
 
 # ================================================================
