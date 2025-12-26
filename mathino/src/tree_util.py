@@ -108,3 +108,9 @@ def _unflatten(it, treedef: TreeDef):
             return unflatten_fn(children, meta)
 
     raise TypeError(f"Unsupported treedef: {treedef}")
+
+
+def tree_map(fun, tree):
+    _x, _def = flatten_pytree(tree)
+    x = list(map(fun, _x))
+    return unflatten_pytree(x, _def)

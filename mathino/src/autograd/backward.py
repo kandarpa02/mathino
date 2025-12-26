@@ -63,6 +63,15 @@ def _id(x):
 def _zero_like(x):
     return b.xp().zeros_like(_extract_np(x))
 
+def norm_tuple(tpl):
+    store = []
+    for t in tpl:
+        if not isinstance(t, tuple):
+            store.append(t)
+        
+        else:
+            store.extend(norm_tuple(t))
+    return tuple(store)
 
 # ================================================================
 # BACKWARD CORE (internal)
@@ -135,7 +144,8 @@ def _backward(fun, original_args, diff_leaves):
         if g is None:
             continue
 
-        raw_parent_grads = node.grad_fn(g)
+        _raw_parent_grads = node.grad_fn(g)
+        raw_parent_grads = norm_tuple((_raw_parent_grads,))
 
         # Block grads for non-trainable tensors
         parent_grads = []
