@@ -137,7 +137,7 @@ def _backward(fun, original_args, diff_leaves):
 
     tape_records = TAPE_STACK[-1] if TAPE_STACK else []
 
-    grads = { _id(out): b.xp().ones_like(out) }
+    grads = { _id(out): b.xp().ones_like(_extract_np(out)) }
 
     for node in reversed(tape_records):
         g = grads.get(_id(node.out))
