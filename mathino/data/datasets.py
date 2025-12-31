@@ -1,8 +1,8 @@
 from .dataset_base import dataset
 
-__all__ = ["mnist"]
+__all__ = ["MNIST"]
 
-class mnist(dataset):
+class MNIST(dataset):
     def __init__(self, path=None):
         super().__init__(
             path='mathino/data/storage/mnist.npz' if path==None else path, 
