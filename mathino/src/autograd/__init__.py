@@ -1,1 +1,1 @@
-from .custom_function import Function
+from .custom_function import Op

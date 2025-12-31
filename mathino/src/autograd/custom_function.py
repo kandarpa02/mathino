@@ -1,6 +1,6 @@
 from ..base import function
 
-class Function:
+class Op:
     def __init__(self) -> None:
         self.parents = None
     
@@ -19,7 +19,7 @@ class Function:
         self.parents = list(args)
 
     def get_parents(self):
-        return tuple(self.parents)
+        return self.parents[0] if len(self.parents)==1 else tuple(self.parents)
 
     def forward(self, *args):
         raise NotImplementedError

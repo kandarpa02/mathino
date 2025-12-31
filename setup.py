@@ -2,6 +2,7 @@ from setuptools import setup, find_packages, Extension
 import os
 
 
+
 setup(
     name="mathino",
     version="0.0.1",
@@ -13,6 +14,7 @@ setup(
     url="https://github.com/kandarpa02/faketensor.git",
     packages=find_packages(),
     python_requires=">=3.8",
+    requires = ["gdown",],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",

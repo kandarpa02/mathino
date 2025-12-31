@@ -1,5 +1,6 @@
 
 # 3. Rest of imports (order no longer matters)
+from .data import data
 from .src.autograd.backward import grad, value_and_grad
 from .src import autograd
 from .src.base import no_record
