@@ -377,7 +377,7 @@ def matmul(a: Array, b: Array):
         from . import matmul
         from .primitive_array_ops import expand_dims
 
-        out = as_nd(lib.matmul(a, b))
+        out = as_nd(lib.matmul(unwrap(a), unwrap(b)))
 
         def grad_fn(g):
             A, B, G = a, b, g
