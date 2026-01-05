@@ -1,102 +1,109 @@
-# from ..backend.backend import xp
-# lib = xp()
 import numpy as np
 import math
-import random
-from ..src.tree_util import map
+from typing import Tuple, List
 from ..src.ndarray.base import array
-from typing import List
 
-def len_error(*args):
-    first_len = len(args[0])
-    val = all(len(arg) == first_len for arg in args)
-    if not val:
-        raise ValueError(f"input arrays must have the same length.")
 
-class ARRAYLOADER:
-    def __len__(self): pass
-    def __getitem__(self, idx) -> List: pass
+def _check_lengths(arrays):
+    n = len(arrays[0])
+    for a in arrays:
+        if len(a) != n:
+            raise ValueError("All input arrays must have the same length")
+    return n
 
-class ArrayLoader(ARRAYLOADER):
+
+class ArrayLoader:
     def __init__(
         self,
-        *args,
+        *arrays,
         batch_size: int,
         shuffle: bool = False,
         drop_last: bool = False,
-        split: tuple | None = None,
+        split: Tuple[int, ...] | None = None,
         part: int = 0,
+        seed: int | None = None,
     ):
-        len_error(args)
-
-        # from .datasets import dataset
-        # if len(args) == 1 and isinstance(args[0], dataset):
-        #     args = args[0].arrays
-
-        self.ddict = dict(enumerate(args))
-
-        self.batch_size = batch_size
+        self.arrays = arrays
+        self.batch_size = int(batch_size)
         self.shuffle = shuffle
         self.drop_last = drop_last
+        self.rng = np.random.default_rng(seed)
+
+        # ---- validate ----
+        n = _check_lengths(arrays)
 
         # ---- base indices ----
-        total_samples = len(args[0])
-        indices = np.arange(total_samples)
+        indices = np.arange(n, dtype=np.int64)
 
-        # ---- split logic ----
+        # ---- split ----
         if split is not None:
-            if not isinstance(split, tuple):
-                raise TypeError("split must be a tuple")
-
-            if any(s <= 0 for s in split):
-                raise ValueError("split values must be positive")
+            if not all(isinstance(s, int) and s > 0 for s in split):
+                raise ValueError("split must be positive integers")
 
             total = sum(split)
             if total > 100:
                 raise ValueError("split percentages must sum to <= 100")
 
-            if len(split) == 1:
-                split = (split[0], 100 - split[0])
-            elif total < 100:
+            if total < 100:
                 split = split + (100 - total,)
 
-            sizes = [int(total_samples * s / 100) for s in split]
-            sizes[-1] = total_samples - sum(sizes[:-1])
+            sizes = [(n * s) // 100 for s in split]
+            sizes[-1] = n - sum(sizes[:-1])
 
             bounds = np.cumsum([0] + sizes)
-
             if part >= len(sizes):
                 raise ValueError("part index out of range")
 
             indices = indices[bounds[part]:bounds[part + 1]]
 
-        # ---- shuffle inside split ----
-        if shuffle:
-            indices = np.random.permutation(indices)
-
-        self.indices = indices
+        self.base_indices = indices
         self.num_samples = len(indices)
 
-        # ---- batch count ----
+        # ---- batches ----
         if drop_last:
-            self.num_batches = self.num_samples // batch_size
+            self.num_batches = self.num_samples // self.batch_size
         else:
-            self.num_batches = math.ceil(self.num_samples / batch_size)
+            self.num_batches = math.ceil(self.num_samples / self.batch_size)
+
+        # ---- epoch state ----
+        self._epoch_indices = None
+        self.reset()
+
+    # -------------------------------------------------
+
+    def reset(self):
+        """Call once per epoch"""
+        if self.shuffle:
+            self._epoch_indices = self.rng.permutation(self.base_indices)
+        else:
+            self._epoch_indices = self.base_indices
+
+    # -------------------------------------------------
 
     def __len__(self):
-        """Number of batches"""
         return self.num_batches
 
-    def __getitem__(self, batch_idx):
-        if batch_idx >= self.num_batches:
-            raise IndexError("Batch index out of range")
+    # -------------------------------------------------
+
+    def __getitem__(self, batch_idx: int):
+        if batch_idx < 0 or batch_idx >= self.num_batches:
+            raise IndexError("batch index out of range")
 
         start = batch_idx * self.batch_size
         end = start + self.batch_size
 
-        idx = self.indices[start:end]
-        ret = list(map(lambda x: array(x[idx]), self.ddict).values())
-        return ret[0] if len(ret) == 1 else ret
+        if start >= self.num_samples:
+            raise IndexError("batch index out of range")
+
+        batch_idx = self._epoch_indices[start:end]
+
+        # Controlled allocation: one copy per batch, no leaks
+        batch = [
+            array(np.take(a, batch_idx, axis=0))
+            for a in self.arrays
+        ]
+
+        return batch[0] if len(batch) == 1 else batch
 
 
 def array_loader(
