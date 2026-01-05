@@ -4,6 +4,10 @@ import numpy as np
 
 class dataset:
     def __init__(self, path, link):
+        dirpath = os.path.dirname(path)
+        if dirpath and not os.path.exists(dirpath):
+            os.makedirs(dirpath, exist_ok=True)
+
         if not os.path.exists(path):
             gdown.download(link, path, fuzzy=True)
 
@@ -22,5 +26,3 @@ class dataset:
 
     def load_data(self):
         return self.arrays
-
-
