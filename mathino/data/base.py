@@ -103,7 +103,7 @@ class ArrayLoader:
 
         # ---- GPU/CPU-safe batch allocation ----
         batch = [
-            array(lib.take(a.data if hasattr(a, "data") else a, batch_idx, axis=0))
+            array(lib.take(a.np, batch_idx, axis=0))
             for a in self.arrays
         ]
 
