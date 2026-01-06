@@ -10,39 +10,56 @@ from .DType import DType
 # -------------------------
 
 _Dtype = Union[DType, str, None]
-
 def as_ndarray(x):
     """
-    Convert input to backend array (numpy OR cupy) while respecting NDarray.
+    Convert input to backend array (NumPy or CuPy).
     """
-    lib = xp()
+    lib = xp()  # either numpy or cupy
 
-    # If it's already a backend ndarray
+    # -------------------------------------------------
+    # Backend native array (fast path)
+    # -------------------------------------------------
     if isinstance(x, lib.ndarray):
         return x
 
+    # -------------------------------------------------
+    # Our NDarray wrapper
+    # -------------------------------------------------
+    if isinstance(x, NDarray):
+        return lib.asarray(x.np)
+
+    # -------------------------------------------------
     # Python scalars
+    # -------------------------------------------------
     if isinstance(x, (int, float, bool)):
         return lib.asarray(x)
 
-    # Lists or tuples
+    # -------------------------------------------------
+    # List / tuple
+    # -------------------------------------------------
     if isinstance(x, (list, tuple)):
         return lib.asarray(x)
 
-    # If user passed a raw numpy array → convert to backend array
-    try:
-        import numpy as _np
-        if isinstance(x, _np.ndarray):
-            return lib.asarray(x)
-    except Exception:
-        pass
+    # -------------------------------------------------
+    # NumPy ndarray handling
+    # -------------------------------------------------
+    import numpy as np
 
-    # Our NDarray
-    if isinstance(x, NDarray):
-        return lib.asarray(x.np)
-    
-    if lib.isscalar(x):            
-        return lib.array(x)
+    if isinstance(x, np.ndarray):
+        return lib.asarray(x)
+
+    if lib.__name__ == "numpy":
+        try:
+            import cupy as cp
+            if isinstance(x, cp.ndarray):
+                raise TypeError(
+                    "Cannot convert CuPy array to NumPy backend implicitly"
+                )
+        except ImportError:
+            pass
+
+    if lib.isscalar(x):
+        return lib.asarray(x)
 
     raise TypeError(f"{type(x)} not supported as input")
 
