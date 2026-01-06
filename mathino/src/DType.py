@@ -26,6 +26,10 @@ def normalize_dtype(dtype):
     if hasattr(dtype, 'kind'):  
         return dtype
 
+    # NumPy shorthand boolean
+    if dtype == '?':
+        return bool_.to_native(xp)
+
     # If our abstract DType
     if isinstance(dtype, DType):
         return dtype.to_native(xp)
