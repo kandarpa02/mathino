@@ -1,5 +1,5 @@
 from ...backend import backend as b
-from ..base import function
+from ..base import MakeOP
 from .._typing import Array
 
 # =========================================
@@ -236,4 +236,4 @@ def convolution(x: Array, w: Array, stride=1, padding=0, dilation=1):
 
         return as_nd(out), (x_np, w_np), grad_fn
 
-    return function(_fun)(x, w)
+    return MakeOP(_fun)(x, w)

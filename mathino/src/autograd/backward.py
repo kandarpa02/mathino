@@ -152,6 +152,8 @@ def _backward(fun, original_args, diff_leaves):
         node.grad_fn = None
         node.out = None
 
+    # print(tape_records)
+
     tape_records.clear()
 
     return _out, grads

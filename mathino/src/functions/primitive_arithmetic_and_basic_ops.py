@@ -2,13 +2,13 @@
 Vectorized primitive array operations with autograd support.
 
 This module defines core numerical operations (add, multiply, matmul, etc.)
-for the FakeTensor autograd system. Each operation is wrapped using `function`,
-which records the forward pass, its inputs, and a gradient function that
+for the FakeTensor autograd system. Each operation is wrapped using `MakeOP`,
+which records the forward pass, its inputs, and a gradient MakeOP that
 computes partial derivatives during the backward pass.
 
 All operations support:
     • Broadcasting (NumPy/CuPy rules)
-    • Higher-order gradients (via functional closures)
+    • Higher-order gradients (via MakeOPal closures)
     • Mixed scalar/array inputs
     • Any backend implementing the xp() interface (NumPy or CuPy)
 
@@ -18,7 +18,7 @@ FakeTensor NDarray, backend arrays, or Python scalars.
 
 from __future__ import annotations
 from .._typing import Array as A
-from ..base import function
+from ..base import MakeOP
 from ..utils import broadcast_backward
 from ...backend.backend import xp
 from .primitive_array_ops import squeeze
@@ -61,7 +61,7 @@ def add(x: Array, y: Array):
 
         return out, (as_nd(x), as_nd(y)), grad_fn
 
-    return function(_fun)(x, y)
+    return MakeOP(_fun)(x, y)
 
 
 # =====================================================================
@@ -93,7 +93,7 @@ def subtract(x: Array, y: Array):
 
         return out, (as_nd(x), as_nd(y)), grad_fn
 
-    return function(_fun)(x, y)
+    return MakeOP(_fun)(x, y)
 
 
 # =====================================================================
@@ -122,7 +122,7 @@ def negative(x: Array):
 
         return out, (as_nd(x),), grad_fn
 
-    return function(_fun)(x)
+    return MakeOP(_fun)(x)
 
 
 # =====================================================================
@@ -155,7 +155,7 @@ def multiply(x: Array, y: Array):
 
         return out, (as_nd(x), as_nd(y)), grad_fn
 
-    return function(_fun)(x, y)
+    return MakeOP(_fun)(x, y)
 
 
 # =====================================================================
@@ -191,7 +191,7 @@ def divide(x: Array, y: Array):
 
         return out, (as_nd(x), as_nd(y)), grad_fn
 
-    return function(_fun)(x, y)
+    return MakeOP(_fun)(x, y)
 
 
 # =====================================================================
@@ -226,7 +226,7 @@ def log(x: Array):
         return out, (as_nd(x),), grad_fn
 
 
-    return function(_fun)(x)
+    return MakeOP(_fun)(x)
 
 # =====================================================================
 # EXP
@@ -241,7 +241,7 @@ def exp(x:Array):
             return (multiply(g, out),)
         
         return out, (as_nd(x), ), grad_fn
-    return function(_fun)(x)
+    return MakeOP(_fun)(x)
 
 
 # =====================================================================
@@ -270,7 +270,7 @@ def sign(x:Array):
             return (as_nd(lib.zeros_like(x)),)
         
         return out, (as_nd(x),), grad_fn
-    return function(_fun)(x)
+    return MakeOP(_fun)(x)
 
 
 
@@ -310,7 +310,7 @@ def power(x: Array, y: Array):
 
         return out, (as_nd(x), as_nd(y)), grad_fn
 
-    return function(_fun)(x, y)
+    return MakeOP(_fun)(x, y)
 
 
 # =====================================================================
@@ -345,7 +345,7 @@ def transpose(x: Array, axes=None):
 
         return out, (as_nd(x),), grad_fn
 
-    return function(_fun)(x)
+    return MakeOP(_fun)(x)
 
 
 # =====================================================================
@@ -406,4 +406,4 @@ def matmul(a: Array, b: Array):
 
         return out, (as_nd(a), as_nd(b)), grad_fn
 
-    return function(_fun)(a, b)
+    return MakeOP(_fun)(a, b)

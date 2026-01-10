@@ -1,5 +1,5 @@
 from .._typing import Array as A
-from ..base import function
+from ..base import MakeOP
 # from ..jit.placeholder import FT_Tracer
 # from ..jit.utils import name
 from ...backend.backend import xp
@@ -31,7 +31,7 @@ def maximum(x:A, y:A):
         
         return as_nd(out), (as_nd(x), as_nd(y)), grad_fn
     
-    return function(_fun)(x, y)
+    return MakeOP(_fun)(x, y)
 
 # =====================================================================
 # Minimum
@@ -54,7 +54,7 @@ def minimum(x:A, y:A):
 
         return as_nd(out), (as_nd(x), as_nd(y)), grad_fn
     
-    return function(_fun)(x, y)
+    return MakeOP(_fun)(x, y)
 
 # =====================================================================
 # where
@@ -83,4 +83,4 @@ def where(cond: A, x: A, y: A):
             grad_fn
         )
 
-    return function(_fun)(cond, x, y)
+    return MakeOP(_fun)(cond, x, y)

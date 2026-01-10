@@ -116,7 +116,7 @@ class Node:
     grad_fn: Callable
 
 
-class function:
+class MakeOP:
     """
     Convert a low-level primitive into a traceable op in the autodiff system.
 
@@ -194,5 +194,146 @@ class function:
             t.append(Node(out, parents, grad_fn))
 
         # if JIT:
-        #     sym = Symbol(self.fun, len(args))
+        #     # assign symbols
+        #     for a in parents:
+        #         ensure_symbol(a)
+
+        #     out.symbol = Symbol(
+        #         shape=out.np.shape,
+        #         dtype=out.np.dtype
+        #     )
+
+        #     # store symbolic node
+        #     t = active_tape()
+        #     if t is not None:
+        #         t.append(
+        #             JITNode(
+        #                 out=out.symbol,
+        #                 parents=tuple(p.symbol for p in parents),
+        #                 prim=self.fun
+        #             )
+        #         )
+
+
         return out
+
+
+# TRACE_STACK = []
+
+# @contextmanager
+# def tracing():
+#     global JIT
+#     prev = JIT
+#     JIT = True
+#     TRACE_STACK.append([])
+#     try:
+#         yield
+#     finally:
+#         TRACE_STACK.pop()
+#         JIT = prev
+
+# class Primitive:
+#     def __init__(self, name, forward, backward):
+#         self.name = name
+#         self.forward = forward     
+#         self.backward = backward   
+
+
+# class Symbol:
+#     _counter = 0
+
+#     def __init__(self, prim, inputs):
+#         self.id = Symbol._counter
+#         Symbol._counter += 1
+
+#         self.prim = prim
+#         self.inputs = inputs   # symbols or placeholders
+#         self.shape = None
+#         self.dtype = None
+
+# class Placeholder:
+#     def __init__(self, index):
+#         self.index = index
+
+
+# def apply_primitive(p: Primitive, *args):
+#     from .array import NDarray
+#     from ..backend.backend import xp
+
+#     if JIT:
+#         sym = Symbol(p, args)
+#         TRACE_STACK[-1].append(sym)
+#         return sym
+
+#     else:
+#         # eager
+#         lib = xp()
+#         xs = [a.np if isinstance(a, NDarray) else a for a in args]
+#         out_np = p.forward(*xs)
+#         out = NDarray(out_np)
+
+#         if active_tape() is not None:
+#             def grad_fn(g):
+#                 return p.backward(g, *xs)
+#             active_tape().append(Node(out, args, grad_fn))
+
+#         return out
+
+# class StaticGraph:
+#     def __init__(self, symbols, inputs, output):
+#         self.symbols = symbols
+#         self.inputs = inputs      # placeholders
+#         self.output = output      # symbol
+
+# def execute_graph(graph: StaticGraph, args):
+#     from .array import NDarray
+#     from ..backend.backend import xp
+
+#     env = {}
+
+#     # bind inputs
+#     for ph, arg in zip(graph.inputs, args):
+#         env[ph.index] = arg.np if isinstance(arg, NDarray) else arg
+
+#     # execute symbols
+#     for sym in graph.symbols:
+#         xs = []
+#         for inp in sym.inputs:
+#             if isinstance(inp, Placeholder):
+#                 xs.append(env[inp.index])
+#             else:
+#                 xs.append(env[inp.id])
+
+#         env[sym.id] = sym.prim.forward(*xs)
+
+#     return NDarray(env[graph.output.id])
+
+# class defgraph:
+#     def __init__(self, fn):
+#         self.fn = fn
+#         self.graph = None
+
+#     def __call__(self, *args):
+#         from .array import NDarray
+
+#         # First call → trace
+#         if self.graph is None:
+#             Symbol._counter = 0
+
+#             placeholders = [Placeholder(i) for i in range(len(args))]
+
+#             with tracing():
+#                 out = self.fn(*placeholders)
+#                 symbols = TRACE_STACK[-1]
+
+#             self.graph = StaticGraph(
+#                 symbols=symbols,
+#                 inputs=placeholders,
+#                 output=out
+#             )
+
+#         # Execute static graph
+#         return execute_graph(self.graph, args)
+
+# def graph(fun):
+#     return defgraph(fun)

@@ -2,7 +2,7 @@
 Shape-manipulation and common array operations with autograd support.
 
 This module defines reshape, expand_dims, squeeze, clip, and abs for FakeTensor.
-Each operation uses the `function` wrapper, storing its inputs and a
+Each operation uses the `MakeOP` wrapper, storing its inputs and a
 gradient function for reverse-mode autodiff.
 
 All operations support:
@@ -13,7 +13,7 @@ All operations support:
 
 from __future__ import annotations
 from .._typing import Array as A
-from ..base import function
+from ..base import MakeOP
 from ..utils import broadcast_backward
 from ...backend.backend import xp
 
@@ -54,7 +54,7 @@ def reshape(x: Array, shape):
 
         return out, (as_nd(x),), grad_fn
 
-    return function(_fun)(x)
+    return MakeOP(_fun)(x)
 
 
 # =====================================================================
@@ -88,7 +88,7 @@ def expand_dims(x: Array, axis):
 
         return out, (as_nd(x),), grad_fn
 
-    return function(_fun)(x)
+    return MakeOP(_fun)(x)
 
 
 # =====================================================================
@@ -123,7 +123,7 @@ def squeeze(x: Array, axis=None):
 
         return out, (x_nd,), grad_fn
 
-    return function(_fun)(x)
+    return MakeOP(_fun)(x)
 
 
 # =====================================================================
@@ -160,7 +160,7 @@ def clip(x: Array, min_val, max_val):
 
         return out, (x_nd,), grad_fn
 
-    return function(_fun)(x)
+    return MakeOP(_fun)(x)
 
 
 # =====================================================================
@@ -193,4 +193,4 @@ def abs(x: Array):
 
         return out, (x_nd,), grad_fn
 
-    return function(_fun)(x)
+    return MakeOP(_fun)(x)

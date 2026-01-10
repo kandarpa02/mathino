@@ -10,7 +10,7 @@ Implements sum, mean, max, min, prod with:
 
 from __future__ import annotations
 from .._typing import Array as A
-from ..base import function
+from ..base import MakeOP
 from ...backend.backend import xp
 
 Array = A
@@ -46,7 +46,7 @@ def sum(x: Array, axis=None, keepdims=False):
 
         return out, (x_w,), grad_fn
 
-    return function(_fun)(x)
+    return MakeOP(_fun)(x)
 
 
 # ============================================================
@@ -87,7 +87,7 @@ def mean(x: Array, axis=None, keepdims=False):
 
         return out, (x_w,), grad_fn
 
-    return function(_fun)(x)
+    return MakeOP(_fun)(x)
 
 
 # ============================================================
@@ -126,7 +126,7 @@ def max(x: Array, axis=None, keepdims=False):
 
         return out, (x_w,), grad_fn
 
-    return function(_fun)(x)
+    return MakeOP(_fun)(x)
 
 
 # ============================================================
@@ -164,7 +164,7 @@ def min(x: Array, axis=None, keepdims=False):
 
         return out, (x_w,), grad_fn
 
-    return function(_fun)(x)
+    return MakeOP(_fun)(x)
 
 
 # ============================================================
@@ -202,4 +202,4 @@ def prod(x: Array, axis=None, keepdims=False):
 
         return out, (x_w,), grad_fn
 
-    return function(_fun)(x)
+    return MakeOP(_fun)(x)

@@ -56,12 +56,12 @@ def as_nd(x):
 # -------------------------
 
 class NDarray(A):
-    def __init__(self, data, dtype=None, placeholder=None) -> None:
+    def __init__(self, data, dtype=None) -> None:
         super().__init__()
         arr = as_ndarray(data)
         self.np = arr.astype(dtype) if dtype else arr
         self.train = True
-        self.placeholder=placeholder
+        self.symbol = None
         
     __is_leaf__ = True
     __module__ = "mathino"

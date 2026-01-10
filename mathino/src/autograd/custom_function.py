@@ -1,11 +1,11 @@
-from ..base import function
+from ..base import MakeOP
 
 class Op:
     def __init__(self) -> None:
         self.parents = None
     
     def build(self):
-        @function
+        @MakeOP
         def fun(*args):
             out = self.forward(*args)
             parents = args if self.parents is None else self.parents
