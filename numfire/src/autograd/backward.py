@@ -27,11 +27,11 @@ def expand_cell(x):
     return None
 
 def _extract_np(x):
-    return x.np if is_leaf(x) else x
+    return x.__backend_buffer__ if is_leaf(x) else x
 
 
 def _id(x):
-    return id(x.np) if is_leaf(x) else id(x)
+    return id(x.__backend_buffer__) if is_leaf(x) else id(x)
 
 
 def _zero_like(x):
@@ -219,7 +219,7 @@ def grad(fun):
         for leaf in leaves:
             if is_leaf(leaf):
                 gid = _id(leaf)
-                flat_grads.append(gdict.get(gid, b.xp().zeros_like(leaf.np)))
+                flat_grads.append(gdict.get(gid, b.xp().zeros_like(leaf.__backend_buffer__)))
             else:
                 flat_grads.append(None)
 
@@ -282,7 +282,7 @@ def value_and_grad(fun: Callable, argnum: Union[int, tuple, list, None] = None) 
         for leaf in leaves:
             if is_leaf(leaf):
                 gid = _id(leaf)
-                flat_grads.append(gdict.get(gid, b.xp().zeros_like(leaf.np)))
+                flat_grads.append(gdict.get(gid, b.xp().zeros_like(leaf.__backend_buffer__)))
             else:
                 flat_grads.append(None)
 

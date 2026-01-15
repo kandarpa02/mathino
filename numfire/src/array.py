@@ -3,7 +3,7 @@ from ..backend.backend import xp    # unified backend (numpy OR cupy)
 from .functions import *
 from .functions.comparison import equal, not_equal, greater, greater_equal, less, less_equal, logical_not
 from typing import Optional
-from typing import Union
+from typing import Union, NamedTuple
 from .DType import DType
 # -------------------------
 # Backend-aware array casting
@@ -39,7 +39,7 @@ def as_ndarray(x):
 
     # Our NDarray
     if isinstance(x, NDarray):
-        return lib.asarray(x.np)
+        return lib.asarray(x.__backend_buffer__)
     
     if lib.isscalar(x):            
         return lib.array(x)
@@ -50,6 +50,23 @@ def as_ndarray(x):
 def as_nd(x):
     return NDarray(x)
 
+class _AtIndexer:
+    def __init__(self, x):
+        self.x = x
+
+    def __getitem__(self, idx):
+        return _AtSet(self.x, idx)
+
+
+class _AtSet:
+    def __init__(self, x, idx):
+        self.x = x
+        self.idx = idx
+
+    def set(self, value):
+        new = self.x.__backend_buffer__.copy()
+        new[self.idx] = value
+        return NDarray(new)
 
 # -------------------------
 # NDarray class
@@ -59,38 +76,41 @@ class NDarray(A):
     def __init__(self, data, dtype=None) -> None:
         super().__init__()
         arr = as_ndarray(data)
-        self.np = arr.astype(dtype) if dtype else arr
+        self.__backend_buffer__ = arr.astype(dtype) if dtype else arr
         self.train = True
         
     __is_leaf__ = True
     __module__ = "mathino"
     __qualname__ = "NDarray"
-    
-    # -------------------------
-    # Basic attributes
-    # -------------------------
+
+    @property
+    def np(self):
+        arr = self.__backend_buffer__.view()
+        arr.flags.writeable = False
+        return arr
+
     @property
     def trainable(self):
         return self.train
     
     @property
     def dtype(self):
-        return self.np.dtype.__str__()
+        return self.__backend_buffer__.dtype.__str__()
 
     @property
     def shape(self):
-        return self.np.shape
+        return self.__backend_buffer__.shape
     
     @property
     def ndim(self):
-        return self.np.ndim
+        return self.__backend_buffer__.ndim
     
     @property
     def size(self):
-        return self.np.size
+        return self.__backend_buffer__.size
 
     def __len__(self):
-        return len(self.np)
+        return len(self.__backend_buffer__)
 
     def astype(self, dtype:_Dtype):
         from ..src.ndarray.utils import astype
@@ -104,39 +124,43 @@ class NDarray(A):
     # Display helpers
     # -------------------------
     def __repr__(self):
-        return repr(self.np)
+        return repr(self.__backend_buffer__)
 
     def __str__(self):
-        return str(self.np)
+        return str(self.__backend_buffer__)
 
     def __array__(self):
         """Allows NumPy to extract underlying data when needed."""
-        return self.np
+        return self.__backend_buffer__
 
     @property
     def __cuda_array_interface__(self):
-        return self.np.__cuda_array_interface__
+        return self.__backend_buffer__.__cuda_array_interface__
 
     __array_priority__ = 200 
 
     def __float__(self):
-        return float(self.np)
+        return float(self.__backend_buffer__)
 
     def __int__(self):
-        return int(self.np)
+        return int(self.__backend_buffer__)
     
-    def __setitem__(self, k, v):
-        self.np[k] = v
+    # def __setitem__(self, k, v):
+    #     self.__backend_buffer__[k] = v
 
-    def __getitem__(self, id):
-        return NDarray(self.np[id])
+    def __getitem__(self, idx):
+        return NDarray(self.__backend_buffer__[idx].copy())
     
+    @property
+    def at(self):
+        return _AtIndexer(self)
+
     # -------------------------
     # Array makers
     # -------------------------
 
     def full_like(self, val, dtype=None):
-        return NDarray(xp().full_like(self.np, val, dtype=dtype))
+        return NDarray(xp().full_like(self.__backend_buffer__, val, dtype=dtype))
 
     # -------------------------
     # Unary ops

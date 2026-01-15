@@ -1,14 +1,27 @@
 from typing import Generic, TypeVar
 from ..src.array import NDarray
 
+def as_var(data):
+    return data if isinstance(data, Variable) else Variable(data)
+
+def _check(data):
+    if isinstance(data, Variable|NDarray):
+        return data.np
+    else:
+        return data
+
 class Variable(NDarray):
-    def __init__(self, data, dtype=None, name: str = None):
-        super().__init__(data, dtype)
+    def __init__(self, data, dtype=None, name: str|None = None):
+        super().__init__(as_var(data), dtype)
         self.train = True
         self.name = name if name is not None else 'Variable'
 
-    __module__ = "mathino.nn"
+    __module__ = "numfire.nn"
     __qualname__ = "Variable"
+
+    @property
+    def np(self):
+        return self.__backend_buffer__
 
     @property
     def trainable(self):
@@ -21,8 +34,13 @@ class Variable(NDarray):
         self.train = True
 
     def to_ndarray(self):
-        return NDarray(self.np)
+        return NDarray(self.__backend_buffer__.copy())
     
+    def assign(self, value):
+        value = _check(value)
+        self.__backend_buffer__[...] = value
+        return self
+
     def _repr(self):
         name, shape_str, dtype_str, trainable_str = self.name, self.shape, self.dtype, self.trainable
         indent = len("Variable(") * " "
@@ -33,13 +51,13 @@ class Variable(NDarray):
     
     def __repr__(self):
         return self._repr()
-    
+
     __str__ = __repr__
 
 T = TypeVar("T", bound=Variable)
 
 class Parameter(list[T], Generic[T]):
-    __module__ = "mathino.nn"
+    __module__ = "numfire.nn"
     __qualname__ = "Parameter"
 
     def __init_subclass__(cls) -> None:

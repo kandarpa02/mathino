@@ -112,7 +112,7 @@ class Cell:
             self.local_params.append(value)  #type:ignore
 
     # Parameter recursion
-    def parameters(self, return_tuple=False)->tuple[Parameter]|Generator:
+    def parameters(self)->tuple[Variable]:
         """Returns all parameters (trainable + non-trainable) in this cell.
 
         This includes parameters defined in:
@@ -131,10 +131,9 @@ class Cell:
                 if isinstance(v, Cell):
                     yield from v.parameters()
 
-        return tuple(gather()) if return_tuple else gather()
+        return tuple(gather())
 
-
-    def trainable_parameters(self, return_tuple=False)->tuple[Parameter]|Generator:
+    def trainable_parameters(self)->tuple[Variable]:
         """Returns all trainable parameters in this cell.
 
         A parameter is considered trainable if `param.train == True`.
@@ -153,7 +152,7 @@ class Cell:
                 if isinstance(v, Cell):
                     yield from v.trainable_parameters()
 
-        return tuple(gather()) if return_tuple else gather()
+        return tuple(gather())
 
     def parameters_upload(self, new_params):
         """Replaces trainable parameters with an updated list.
