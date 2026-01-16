@@ -1,5 +1,5 @@
 from ...backend.backend import xp
-from xpy.utils import shift_dvice_
+from xpy.utils import shift_device_
 
 def get_dev(*arrays):
     """
@@ -60,5 +60,5 @@ from .._typing import Array
 def device_shift(x:Array, device:str):
     """Shift to preferred device: 'cpu' or 'cuda'. """
     from ..array import as_nd
-    return as_nd(shift_dvice_(x.__backend_buffer__, device=device))
+    return as_nd(shift_device_(x.__backend_buffer__, device=device))
 
