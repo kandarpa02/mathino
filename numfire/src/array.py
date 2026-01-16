@@ -13,6 +13,7 @@ from .functions.comparison import (
 from typing import Optional
 from typing import Union, NamedTuple
 from .DType import DType
+from ..src.functions.xpy_utils import get_dev, module
 # -------------------------
 # Backend-aware array casting
 # -------------------------
@@ -23,37 +24,39 @@ def as_ndarray(x):
     """
     Convert input to backend array (numpy OR cupy) while respecting NDarray.
     """
-    lib = xp()
-
+    d = get_dev(x)
+    nd = module(d).ndarray
+    asarr = module(d).asarray
+    isscal = module(d).isscalar
+    arr = module(d).array
     # If it's already a backend ndarray
-    if isinstance(x, lib.ndarray):
+    if isinstance(x, nd):
         return x
 
     # Python scalars
     if isinstance(x, (int, float, bool)):
-        return lib.asarray(x)
+        return asarr(x)
 
     # Lists or tuples
     if isinstance(x, (list, tuple)):
-        return lib.asarray(x)
+        return asarr(x)
 
     # If user passed a raw numpy array → convert to backend array
     try:
         import numpy as _np
         if isinstance(x, _np.ndarray):
-            return lib.asarray(x)
+            return asarr(x)
     except Exception:
         pass
 
     # Our NDarray
     if isinstance(x, NDarray):
-        return lib.asarray(x.__backend_buffer__)
+        return asarr(x.__backend_buffer__)
     
-    if lib.isscalar(x):            
-        return lib.array(x)
+    if isscal(x):            
+        return arr(x)
 
     raise TypeError(f"{type(x)} not supported as input")
-
 
 def as_nd(x):
     return NDarray(x)
