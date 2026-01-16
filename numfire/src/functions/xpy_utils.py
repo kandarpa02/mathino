@@ -48,8 +48,11 @@ def module(type):
 
 from .._typing import Array
 
-def device_shift(x:Array, device:str):
-    """Shift to preferred device: 'cpu' or 'cuda'. """
+def device_shift(x: Array, device: str):
+    """Shift x to preferred device: 'cpu' or 'cuda'."""
     from ..array import as_nd
-    return as_nd(shift_device_(x.__backend_buffer__, device=device))
 
+    # Safely unwrap NDarray, otherwise keep x as-is
+    buf = getattr(x, "__backend_buffer__", x)
+
+    return as_nd(shift_device_(buf, device=device))
