@@ -1,6 +1,4 @@
-from setuptools import setup, find_packages, Extension
-import os
-
+from setuptools import setup, find_packages
 
 setup(
     name="numfire",
@@ -13,14 +11,30 @@ setup(
     url="https://github.com/kandarpa02/numfire.git",
     packages=find_packages(),
     python_requires=">=3.8",
+
     install_requires=[
         "gdown",
-        "numpy>=2.3,<2.4",
+        "numpy>=1.26,<2.3",  # safe for CuPy
+        "cupy-cuda12x>=13.6.0,<14.0.0",
         "xpy @ git+https://github.com/kandarpa02/xpy.git@main",
     ],
-    extras_require = {
-    "cuda": ["cupy-cuda12x>=13.6.0,<14.0.0"],
+
+    extras_require={
+        "cpu": [
+            "numpy>=1.26,<2.4",
+        ],
+
+        "cuda12": [
+            "cupy-cuda12x>=13.6.0,<14.0.0",
+            "numpy<2.3",
+        ],
+
+        "cuda11": [
+            "cupy-cuda11x>=12.3.0,<13.0.0",
+            "numpy<2.3",
+        ],
     },
+
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
@@ -29,6 +43,7 @@ setup(
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Software Development :: Libraries",
     ],
+
     license="Apache-2.0",
     zip_safe=False,
 )
