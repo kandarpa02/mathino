@@ -227,7 +227,7 @@ def log(x: Array):
         inp = maximum(x, eps)
 
         _log = primitive(d, 'log')
-        out = as_nd(_log(inp))  # clamp
+        out = as_nd(_log(inp))
 
         def grad_fn(g):
             return (g / (x + eps),)

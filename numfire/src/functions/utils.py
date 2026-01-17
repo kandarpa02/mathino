@@ -1,10 +1,11 @@
 from .._typing import Array as A
 from ..base import MakeOP
-# from ..jit.placeholder import FT_Tracer
-# from ..jit.utils import name
 from ...backend.backend import xp
 from .primitive_reduct import sum
 from ..utils import broadcast_backward
+from .xpy_utils import get_dev, module
+from xpy import primitive
+from typing import Union
 
 def unwrap(x):
     from ..array import NDarray
@@ -14,12 +15,15 @@ def unwrap(x):
 # Maximum
 # =====================================================================
 
-def maximum(x:A, y:A):
-    lib = xp()
+AType = Union[A, int, float, xp().ndarray]
+
+def maximum(x:AType, y:AType):
+    d = get_dev(x, y)
 
     def _fun(x, y):
-        out = lib.maximum(x, y)
         from ..array import as_nd
+        _maximum = primitive(d, 'maximum')
+        out = as_nd(_maximum(x, y))
 
         def grad_fn(g):
             gx = g * (x >= y)
@@ -29,7 +33,7 @@ def maximum(x:A, y:A):
                 broadcast_backward(gy, y.shape),
             )
         
-        return as_nd(out), (as_nd(x), as_nd(y)), grad_fn
+        return out, (as_nd(x), as_nd(y)), grad_fn
     
     return MakeOP(_fun)(x, y)
 
@@ -37,22 +41,23 @@ def maximum(x:A, y:A):
 # Minimum
 # =====================================================================
 
-def minimum(x:A, y:A):
-    lib = xp()
+def minimum(x:AType, y:AType):
+    d = get_dev(x, y)
 
     def _fun(x, y):
-        out = lib.minimum(x, y)
         from ..array import as_nd
+        _minimum = primitive(d, 'minimum')
+        out = as_nd(_minimum(x, y))
 
         def grad_fn(g):
-            gx = g * (x <= y)
-            gy = g * (y < x)
+            gx = g * (x >= y)
+            gy = g * (y > x)
             return (
                 broadcast_backward(gx, x.shape),
                 broadcast_backward(gy, y.shape),
             )
-
-        return as_nd(out), (as_nd(x), as_nd(y)), grad_fn
+        
+        return out, (as_nd(x), as_nd(y)), grad_fn
     
     return MakeOP(_fun)(x, y)
 
@@ -60,12 +65,13 @@ def minimum(x:A, y:A):
 # where
 # =====================================================================
 
-def where(cond: A, x: A, y: A):
-    lib = xp()
+def where(cond: AType, x: AType, y: AType):
+    d = get_dev(x, y)
 
     def _fun(cond, x, y):
-        out = lib.where(cond, x, y)
         from ..array import as_nd
+        _wh = primitive(d, 'where')
+        out = as_nd(_wh(cond, x, y))
 
         def grad_fn(g):
             gx = where(cond, g, as_nd(0.))
@@ -78,7 +84,7 @@ def where(cond: A, x: A, y: A):
             )
 
         return (
-            as_nd(out),
+            out,
             (as_nd(cond), as_nd(x), as_nd(y)),
             grad_fn
         )
